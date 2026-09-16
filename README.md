@@ -1,4 +1,4 @@
-# Agentic Traffic Simulation for somoswanderlust.com
+# Agentic Traffic Simulation for WooCommerce
 
 This project implements AI-driven autonomous agents to simulate real human-like interaction patterns on a WooCommerce site to measure performance and stability.
 
