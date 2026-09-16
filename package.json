@@ -1,0 +1,21 @@
+{
+  "name": "agentic-traffic",
+  "version": "1.0.0",
+  "description": "AI-driven traffic simulation for WooCommerce",
+  "main": "src/orchestration/index.js",
+  "scripts": {
+    "start": "node src/orchestration/index.js",
+    "test": "jest"
+  },
+  "dependencies": {
+    "playwright": "^1.40.0",
+    "bullmq": "^4.0.0",
+    "ioredis": "^5.0.0",
+    "dotenv": "^16.0.0",
+    "@anthropic-ai/sdk": "^0.18.0",
+    "openai": "^4.0.0"
+  },
+  "devDependencies": {
+    "jest": "^29.0.0"
+  }
+}
