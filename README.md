@@ -29,7 +29,7 @@ To get valid results, the audited server should meet these baseline specificatio
 - **PHP Workers:** At least 100 (for the intended stress level).
 - **MySQL:** $\ge$ 5.7 or MariaDB $\ge$ 10.3.
 - **Memory:** $\ge$ 256MB `memory_limit` in `php.ini`.
-- **Tools:** `WP-CLI` must be installed for the SSH setup/cleanup scripts.
+- **Tools:** `WP-CLI` must be installed for the cleanup scripts.
 
 ### 2. Local Setup
 ```bash
@@ -54,17 +54,17 @@ docker-compose up -d --build
 
 ## 🏃 Execution Flow
 
-### Phase 1: Infrastructure Audit & Preparation
-Before the test, you MUST run the diagnostic script via SSH:
-```bash
-bash scripts/ssh/diag_server.sh
-```
-This script audits the server's PHP Workers, MySQL connections, and RAM. **The results of this audit are injected into the final HTML report.**
+### Phase 1: Infrastructure Audit
+Before launching agents, you MUST run the diagnostic script via SSH to identify existing bottlenecks.
 
-Then, prepare the data:
 ```bash
-bash scripts/ssh/setup_site.sh
+# Connect to your server via SSH
+ssh user@server
+
+# Run the diagnostic script
+bash /path/to/scripts/ssh/diag_server.sh
 ```
+This script audits the server's PHP Workers, MySQL connections, and RAM to determine if the site is "Ready for Stress".
 
 ### Phase 2: The Smoke Test (Verification)
 **Mandatory Step:** Launch 1 single agent per persona.
@@ -73,12 +73,21 @@ If the agent completes the purchase flow successfully, the "Action Space" and "P
 ### Phase 3: Stress Test (Fan-Out)
 Scale the workers to reach the breaking point:
 ```bash
+# Scale to 10 workers (approx 50-100 concurrent agents depending on config)
 docker-compose up -d --scale worker=10
 ```
 
+The orchestrator will automatically distribute personas:
+- **Decisive Buyer:** Direct path to checkout.
+- **Comparison Shopper:** High read load.
+- **Indecisive User:** Session/Cart stress.
+- **Account Manager:** Auth/DB stress.
+
 ### Phase 4: Cleanup
+To restore your staging site instantly:
 ```bash
-bash scripts/ssh/cleanup_site.sh
+# Via SSH
+bash /path/to/scripts/ssh/cleanup_site.sh
 ```
 
 ---
