@@ -1,15 +1,16 @@
 const { Queue, Worker } = require('bullmq');
 const BrowserEngine = require('../execution/browser');
 const DecisionEngine = require('../decision/agent');
+const TransactionLogger = require('../execution/logger');
 require('dotenv').config();
 
 const trafficQueue = new Queue('traffic-simulation');
+const logger = new TransactionLogger();
 
 async function startAgent(job) {
     const { persona, startUrl } = job.data;
     console.log(`Starting agent for persona: ${persona}`);
 
-    // Generate a unique profile for this specific purchase/registration
     const userProfile = {
         username: `user_${Math.random().toString(36).substring(2, 10)}`,
         email: `test_${Math.random().toString(36).substring(2, 10)}@example.com`,
@@ -33,8 +34,12 @@ async function startAgent(job) {
         if (action === 'exit') {
             active = false;
         } else {
-            // Map action to browser method
-            // await browser.executeAction(action, userProfile);
+            const result = await browser.executeAction(action, userProfile);
+            if (result) {
+                // Log the DB transaction mirroring the original DB format
+                await logger.logTransaction(result.entity, result.id, result.data);
+                console.log(`Transaction logged for ${result.entity} ID: ${result.id}`);
+            }
         }
     }
 
@@ -45,4 +50,4 @@ const worker = new Worker('traffic-simulation', async job => {
     await startAgent(job);
 });
 
-console.log('Traffic simulation orchestrator running...');
+console.log('Traffic simulation orchestrator running with DB-Mirror Logging...');

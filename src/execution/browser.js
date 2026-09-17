@@ -7,25 +7,19 @@ class BrowserEngine {
             args: [
                 '--no-sandbox',
                 '--disable-setuid-sandbox',
-                '--disable-dev-shm-usage', // Crucial for Docker containers
+                '--disable-dev-shm-usage',
                 '--disable-gpu'
             ]
         });
-
         this.context = await this.browser.newContext({
             viewport: { width: 1280, height: 720 },
             userAgent: 'AgenticTraffic/1.0 (Simulation Bot)'
         });
-
-        // Optimization: Block images and CSS to save bandwidth and RAM
-        // and focus on DOM processing and PHP Workers
         await this.context.route('**/*.{png,jpg,jpeg,gif,svg,css,woff,woff2,ttf}', route => route.abort());
-
         this.page = await this.context.newPage();
     }
 
     async navigate(url) {
-        // Use 'domcontentloaded' instead of 'networkidle' for faster execution
         await this.page.goto(url, { waitUntil: 'domcontentloaded', timeout: 60000 });
     }
 
@@ -38,9 +32,35 @@ class BrowserEngine {
     }
 
     async getPageState() {
-        // Return a cleaned-up version of the DOM to reduce LLM token usage
         const body = await this.page.innerText('body');
-        return body.substring(0, 10000); // Limit size for the LLM
+        return body.substring(0, 10000);
+    }
+
+    async executeAction(action, profile) {
+        switch (action) {
+            case 'register_account':
+                await this.navigate('https://your-site.com/my-account/');
+                await this.type('#reg_username', profile.username);
+                await this.type('#reg_email', profile.email);
+                await this.type('#reg_password', profile.password);
+                await this.click('#register');
+                return { entity: 'wp_users', id: profile.username, data: profile };
+
+            case 'proceed_to_checkout':
+                await this.navigate('https://your-site.com/checkout/');
+                await this.click('#place_order');
+                await this.page.waitForURL('**/order-received/**');
+                const url = this.page.url();
+                const orderId = url.split('/').find(part => !isNaN(parseInt(part)));
+                return {
+                    entity: 'wp_posts',
+                    id: orderId || 'unknown',
+                    data: { post_title: `Order for ${profile.username}`, post_type: 'shop_order', post_status: 'wc-processing' }
+                };
+
+            default:
+                return null;
+        }
     }
 
     async close() {

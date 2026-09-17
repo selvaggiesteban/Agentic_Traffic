@@ -86,7 +86,32 @@ bash /path/to/scripts/ssh/cleanup_site.sh
 
 ---
 
-## 📊 Performance Mapping
+## 📊 Transaction Logging & DB Mirroring
+
+AgenticTraffic now includes a sophisticated logging system that records every database-altering action performed by the agents.
+
+### Output Formats:
+1.  **Global Log (`logs/transactions/global_transactions.json`):** A chronological JSON-Lines file containing every transaction across all agents.
+2.  **Entity Snapshots:** Individual JSON files created for every modified record (e.g., `wp_users_username.json` or `wp_posts_123.json`). 
+    - These files mirror the **original database schema** (column-value pairs), allowing you to import them directly or analyze them as DB portions.
+
+### Log Structure:
+```json
+{
+  "timestamp": "2026-09-17T...",
+  "entity": "wp_posts",
+  "id": "12345",
+  "data": {
+    "post_title": "Order for user_abc123",
+    "post_type": "shop_order",
+    "post_status": "wc-processing"
+  }
+}
+```
+
+---
+
+## 📈 Performance Mapping
 
 We provide a `flow_map.html` file that maps every agent action to the server infrastructure. Use this to align your server logs with the agent's behavior:
 
