@@ -8,26 +8,30 @@
 
 ---
 
-## 🚀 High-Performance Architecture
+## 🏗 Architecture & "The Brain" (How it works)
 
-The system is designed for massive scale using a **Fan-Out Worker Pattern**:
+This project does not use "magic", but a **Reasoning-Action Loop**:
+1. **Extraction:** A headless browser (Playwright) captures the current page's visible text and DOM.
+2. **Reasoning:** This text is sent to an LLM (Claude/GPT) via API. The LLM acts as the "User's Brain", analyzing the page to find elements (e.g., "Where is the Checkout button?").
+3. **Action:** The LLM returns a specific command from a predefined **Action Space** (e.g., `click_element`).
+4. **Execution:** Playwright executes that command on the live site.
 
-1.  **The Brain (LLM):** Interprets page state and decides the next action (e.g., "Register" $\rightarrow$ "Search" $\rightarrow$ "Buy").
-2.  **The Hands (Playwright):** Executes browser actions in headless mode with resource optimization (blocked CSS/Images).
-3.  **The Heart (BullMQ + Redis):** Manages thousands of jobs, ensuring a steady flow of agentic traffic across multiple distributed worker nodes.
-4.  **The Infrastructure (Docker):** Allows instant scaling of worker replicas to match the server's PHP worker limit.
+**API Key Required:** Yes. This system requires an **Anthropic** or **OpenAI** API key to power the decision-making process.
 
 ---
 
 ## 🛠 Installation & Configuration
 
-### 1. Prerequisites
-- **Docker & Docker Compose**
-- **Redis** (provided via Docker)
-- **LLM API Key** (Anthropic or OpenAI)
-- **WooCommerce Staging Site** (with "Cash on Delivery" active)
+### 1. Server Requirements (Target Site)
+To get valid results, the audited server should meet these baseline specifications:
+- **Environment:** WordPress + WooCommerce.
+- **PHP:** $\ge$ 8.1 (Recommended 8.2+).
+- **PHP Workers:** At least 100 (for the intended stress level).
+- **MySQL:** $\ge$ 5.7 or MariaDB $\ge$ 10.3.
+- **Memory:** $\ge$ 256MB `memory_limit` in `php.ini`.
+- **Tools:** `WP-CLI` must be installed for the SSH setup/cleanup scripts.
 
-### 2. Setup
+### 2. Local Setup
 ```bash
 git clone https://github.com/selvaggiesteban/Agentic_Traffic.git
 cd Agentic_Traffic
@@ -42,89 +46,51 @@ REDIS_PORT=6379
 ```
 
 ### 3. Infrastructure Launch
-Launch the distributed system:
 ```bash
 docker-compose up -d --build
 ```
 
 ---
 
-## 🏃 Launching the Evaluation
+## 🏃 Execution Flow
 
-### Phase 1: Site Preparation (via SSH)
-Before launching agents, prepare the environment using the provided SSH scripts to avoid bottlenecking the site during setup.
-
+### Phase 1: Infrastructure Audit & Preparation
+Before the test, you MUST run the diagnostic script via SSH:
 ```bash
-# Connect to your server via SSH
-ssh user@server
-
-# Run the preparation script (requires WP-CLI)
-bash /path/to/scripts/ssh/setup_site.sh
+bash scripts/ssh/diag_server.sh
 ```
-*This will mass-create users and products to ensure the agents have data to interact with.*
+This script audits the server's PHP Workers, MySQL connections, and RAM. **The results of this audit are injected into the final HTML report.**
 
-### Phase 2: Executing the Stress Test
-You can scale the number of concurrent agents by changing the `replicas` in `docker-compose.yml` or using the Docker CLI:
-
+Then, prepare the data:
 ```bash
-# Scale to 10 workers (approx 50-100 concurrent agents depending on config)
+bash scripts/ssh/setup_site.sh
+```
+
+### Phase 2: The Smoke Test (Verification)
+**Mandatory Step:** Launch 1 single agent per persona.
+If the agent completes the purchase flow successfully, the "Action Space" and "Pattern Recognition" are verified for your specific site version.
+
+### Phase 3: Stress Test (Fan-Out)
+Scale the workers to reach the breaking point:
+```bash
 docker-compose up -d --scale worker=10
 ```
 
-The orchestrator will automatically distribute personas:
-- **Decisive Buyer:** Direct path to checkout.
-- **Comparison Shopper:** High read load.
-- **Indecisive User:** Session/Cart stress.
-- **Account Manager:** Auth/DB stress.
-
-### Phase 3: Post-Test Cleanup
-To restore your staging site instantly:
+### Phase 4: Cleanup
 ```bash
-# Via SSH
-bash /path/to/scripts/ssh/cleanup_site.sh
+bash scripts/ssh/cleanup_site.sh
 ```
 
 ---
 
-## 📊 Transaction Logging & DB Mirroring
+## 📊 Deliverables
 
-AgenticTraffic now includes a sophisticated logging system that records every database-altering action performed by the agents.
+### 1. Flow Map (`flow_map.html`)
+A technical map showing the request path and the **actual server configuration** audited by the diagnostic script.
 
-### Output Formats:
-1.  **Global Log (`logs/transactions/global_transactions.json`):** A chronological JSON-Lines file containing every transaction across all agents.
-2.  **Entity Snapshots:** Individual JSON files created for every modified record (e.g., `wp_users_username.json` or `wp_posts_123.json`). 
-    - These files mirror the **original database schema** (column-value pairs), allowing you to import them directly or analyze them as DB portions.
-
-### Log Structure:
-```json
-{
-  "timestamp": "2026-09-17T...",
-  "entity": "wp_posts",
-  "id": "12345",
-  "data": {
-    "post_title": "Order for user_abc123",
-    "post_type": "shop_order",
-    "post_status": "wc-processing"
-  }
-}
-```
-
----
-
-## 📈 Performance Mapping
-
-We provide a `flow_map.html` file that maps every agent action to the server infrastructure. Use this to align your server logs with the agent's behavior:
-
-| Request Path | Component | Impact |
-| :--- | :--- | :--- |
-| HTTP $\rightarrow$ Firewall | Edge Server | Network I/O |
-| Firewall $\rightarrow$ Cache | LiteSpeed | RAM/Disk |
-| Cache $\rightarrow$ Worker | PHP-FPM | Worker Lock |
-| Worker $\rightarrow$ Code | WordPress | CPU/RAM |
-| Code $\rightarrow$ DB | MySQL | Disk I/O / Locks |
-| DB $\rightarrow$ Response | HTTP Stream | Network Out |
-
----
+### 2. Transaction Logs (`logs/transactions/`)
+- **Global Log:** Chronological JSON-Lines of all actions.
+- **Entity Snapshots:** Individual JSON files mirroring the database schema for every created user and order.
 
 ## 🛡 Safety Guards
 - **Circuit Breaker:** Automated shutdown if 5xx error rate exceeds 5%.
