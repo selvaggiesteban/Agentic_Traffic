@@ -37,9 +37,10 @@ class BrowserEngine {
     }
 
     async executeAction(action, profile) {
+        const baseUrl = process.env.TARGET_SITE_URL || 'https://your-site.com';
         switch (action) {
             case 'register_account':
-                await this.navigate('https://your-site.com/my-account/');
+                await this.navigate(`${baseUrl}/my-account/`);
                 await this.type('#reg_username', profile.username);
                 await this.type('#reg_email', profile.email);
                 await this.type('#reg_password', profile.password);
@@ -47,7 +48,7 @@ class BrowserEngine {
                 return { entity: 'wp_users', id: profile.username, data: profile };
 
             case 'proceed_to_checkout':
-                await this.navigate('https://your-site.com/checkout/');
+                await this.navigate(`${baseUrl}/checkout/`);
                 await this.click('#place_order');
                 await this.page.waitForURL('**/order-received/**');
                 const url = this.page.url();
