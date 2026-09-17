@@ -1,4 +1,4 @@
-# 🤖 AgenticTraffic: High-Performance WooCommerce Simulation
+# AgenticTraffic: High-Performance WooCommerce Simulation
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Node.js](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen)](https://nodejs.org/)
@@ -8,7 +8,7 @@
 
 ---
 
-## 🏗 Architecture & "The Brain" (How it works)
+## Architecture & "The Brain" (How it works)
 
 This project does not use "magic", but a **Reasoning-Action Loop**:
 1. **Extraction:** A headless browser (Playwright) captures the current page's visible text and DOM.
@@ -20,7 +20,7 @@ This project does not use "magic", but a **Reasoning-Action Loop**:
 
 ---
 
-## 🛠 Installation & Configuration
+## Installation & Configuration
 
 ### 1. Server Requirements (Target Site)
 To get valid results, the audited server should meet these baseline specifications:
@@ -52,7 +52,7 @@ docker-compose up -d --build
 
 ---
 
-## 🏃 Execution Flow
+## Execution Flow
 
 ### Phase 1: Infrastructure Audit
 Before launching agents, you MUST run the diagnostic script via SSH to identify existing bottlenecks.
@@ -92,7 +92,7 @@ bash /path/to/scripts/ssh/cleanup_site.sh
 
 ---
 
-## 📊 Deliverables
+## Deliverables
 
 ### 1. Flow Map (`flow_map.html`)
 A technical map showing the request path and the **actual server configuration** audited by the diagnostic script.
@@ -101,10 +101,10 @@ A technical map showing the request path and the **actual server configuration**
 - **Global Log:** Chronological JSON-Lines of all actions.
 - **Entity Snapshots:** Individual JSON files mirroring the database schema for every created user and order.
 
-## 🛡 Safety Guards
+## Safety Guards
 - **Circuit Breaker:** Automated shutdown if 5xx error rate exceeds 5%.
 - **Human-Like Delay:** Randomized "Think Time" between actions.
 - **Resource Blocking:** Blocks images/CSS to focus strictly on server-side processing.
 
-## 📜 License
+## License
 MIT
