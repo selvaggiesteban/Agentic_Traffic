@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Mapeo de Flujo de Solicitud - WooCommerce Stress Test</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 40px; background-color: #f4f7f6; }
+        h1 { color: #2c3e50; text-align: center; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; background: white; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        th, td { padding: 15px; text-align: left; border-bottom: 1px solid #ddd; }
+        th { background-color: #3498db; color: white; text-transform: uppercase; font-size: 13px; }
+        tr:hover { background-color: #f1f1f1; }
+        .flow-step { font-weight: bold; color: #34495e; }
+        .url-cell { font-family: 'Courier New', Courier, monospace; color: #e74c3c; font-size: 14px; }
+    </style>
+</head>
+<body>
+    <h1>🗺️ Mapeo de Flujo de Solicitud HTTP $\rightarrow$ Infraestructura</h1>
+    <p style="text-align: center;">Análisis del camino crítico desde el clic del agente hasta la respuesta del servidor.</p>
+    <table>
+        <thead>
+            <tr>
+                <th>Flujo de Ejecución (Request Path)</th>
+                <th>Componente Responsable</th>
+                <th>Dirección URL / Endpoint Típico</th>
+                <th>Impacto en Recursos</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td class="flow-step">Petición HTTP $\rightarrow$ Firewall</td>
+                <td>Edge Server / Cloudflare</td>
+                <td class="url-cell">GET /index.php</td>
+                <td>Bajo (Network I/O)</td>
+            </tr>
+            <tr>
+                <td class="flow-step">Firewall $\rightarrow$ Caché LiteSpeed</td>
+                <td>LiteSpeed Web Server</td>
+                <td class="url-cell">GET /product/test-item/</td>
+                <td>Mínimo (RAM/SSD Read)</td>
+            </tr>
+            <tr>
+                <td class="flow-step">Caché $\rightarrow$ Asignación PHP Worker</td>
+                <td>PHP-FPM / Hostinger Worker</td>
+                <td class="url-cell">POST /wp-login.php</td>
+                <td>Crtítico (Worker Lock)</td>
+            </tr>
+            <tr>
+                <td class="flow-step">PHP Worker $\rightarrow$ Ejecución WordPress</td>
+                <td>WordPress Core / WooCommerce</td>
+                <td class="url-cell">POST /checkout/</td>
+                <td>Medio (CPU/RAM)</td>
+            </tr>
+            <tr>
+                <td class="flow-step">WP Code $\rightarrow$ Consulta MySQL</td>
+                <td>MySQL / MariaDB</td>
+                <td class="url-cell">INSERT INTO wp_posts (post_type='shop_order')</td>
+                <td>Muy Alto (Disk I/O / DB Locks)</td>
+            </tr>
+            <tr>
+                <td class="flow-step">MySQL $\rightarrow$ Respuesta al Navegador</td>
+                <td>HTTP Response Stream</td>
+                <td class="url-cell">HTTP 200 / 302 Redirect</td>
+                <td>Bajo (Network Out)</td>
+            </tr>
+        </tbody>
+    </table>
+</body>
+</html>

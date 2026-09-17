@@ -1,107 +1,110 @@
-# 🤖 AgenticTraffic: AI-Driven WooCommerce Simulation
+# 🤖 AgenticTraffic: High-Performance WooCommerce Simulation
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Node.js](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen)](https://nodejs.org/)
-[![Playwright](https://img.shields.io/badge/Playwright-1.40+-blue)](https://playwright.dev/)
+[![Docker](https://img.shields.io/badge/Docker-Ready-blue)](https://www.docker.com/)
 
-**AgenticTraffic** is a sophisticated load-testing framework that goes beyond traditional HTTP request simulation. It leverages Large Language Models (LLMs) to power autonomous agents that interact with WooCommerce stores as real humans would—navigating the DOM, making decisions based on page content, and following non-linear user journeys.
-
-## 🚀 Why Agentic Traffic?
-
-Traditional load tools (like JMeter or K6) send repetitive, predictable requests. **AgenticTraffic** provides:
-- **True Realism:** Agents "read" the page and react to dynamic content.
-- **Unpredictable Paths:** Simulation of "window shopping" and indecisive behavior.
-- **Deep Server Stress:** Triggers complex server-side logic (cart updates, session handling, auth) that simple requests often bypass.
-- **Autonomous Execution:** Define a persona, and the AI handles the interaction loop.
+**AgenticTraffic** is a distributed load-testing framework that leverages Large Language Models (LLMs) to power autonomous agents. Unlike traditional tools, it simulates real human-like interaction patterns—navigating the DOM, managing sessions, and making decisions—to identify critical bottlenecks in the full HTTP $\rightarrow$ PHP-FPM $\rightarrow$ MySQL stack.
 
 ---
 
-## 🏗 Architecture
+## 🚀 High-Performance Architecture
 
-The system decouples the **Brain** from the **Hands**:
+The system is designed for massive scale using a **Fan-Out Worker Pattern**:
 
-```mermaid
-graph TD
-    A[Orchestrator: BullMQ] -->|Dispatch Job| B[Worker Node: Docker]
-    B --> C[Execution: Playwright]
-    C -->|Page State/DOM| D[Decision: LLM - Claude/GPT]
-    D -->|Action: Click/Type/Search| C
-    C -->|Interaction| E[Target WooCommerce Site]
-    B -->|Session State| F[State Store: Redis]
-```
-
-### Core Components:
-- **Execution Engine (Playwright):** High-performance browser automation for interacting with the web UI.
-- **Decision Engine (LLM):** Uses state-of-the-art models (Claude 3.5 Sonnet / GPT-4o) to interpret the current view and determine the next logical action.
-- **Orchestrator (BullMQ & Redis):** Manages agent concurrency, distributes tasks across workers, and maintains session persistence.
+1.  **The Brain (LLM):** Interprets page state and decides the next action (e.g., "Register" $\rightarrow$ "Search" $\rightarrow$ "Buy").
+2.  **The Hands (Playwright):** Executes browser actions in headless mode with resource optimization (blocked CSS/Images).
+3.  **The Heart (BullMQ + Redis):** Manages thousands of jobs, ensuring a steady flow of agentic traffic across multiple distributed worker nodes.
+4.  **The Infrastructure (Docker):** Allows instant scaling of worker replicas to match the server's PHP worker limit.
 
 ---
 
-## 🎭 Simulation Personas
+## 🛠 Installation & Configuration
 
-Agents are assigned personas to ensure a balanced distribution of server load:
-
-| Persona | Goal | Behavior | Primary Stress Point |
-| :--- | :--- | :--- | :--- |
-| **Decisive Buyer** | Quick Conversion | Search $\rightarrow$ Product $\rightarrow$ Checkout | Database Writes (Orders) |
-| **Comparison Shopper** | Market Research | Category $\rightarrow$ Multiple Product Pages $\rightarrow$ Exit | Page Reads & Cache |
-| **Indecisive User** | Cart Manipulation | Add $\rightarrow$ Remove $\rightarrow$ Change Variant $\rightarrow$ Checkout | Session & Cart Management |
-| **Account Manager** | Profile Maintenance | Login $\rightarrow$ Address Edit $\rightarrow$ Order History | Auth & User Tables |
-
----
-
-## 🛠 Getting Started
-
-### Prerequisites
-- **Node.js** $\ge$ 18.0.0
-- **Redis** (Running locally or via Docker)
+### 1. Prerequisites
+- **Docker & Docker Compose**
+- **Redis** (provided via Docker)
 - **LLM API Key** (Anthropic or OpenAI)
+- **WooCommerce Staging Site** (with "Cash on Delivery" active)
 
-### Installation
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/selvaggiesteban/Agentic_Traffic.git
-   cd Agentic_Traffic
-   ```
-2. Install dependencies:
-   ```bash
-   npm install
-   npx playwright install chromium
-   ```
-
-### Configuration
-Create a `.env` file in the root directory:
+### 2. Setup
+```bash
+git clone https://github.com/selvaggiesteban/Agentic_Traffic.git
+cd Agentic_Traffic
+cp .env.example .env
+```
+Edit the `.env` file:
 ```env
-ANTHROPIC_API_KEY=your_api_key_here
-# OR
-OPENAI_API_KEY=your_api_key_here
-
-REDIS_HOST=127.0.0.1
+ANTHROPIC_API_KEY=your_key
+TARGET_SITE_URL=https://staging.yoursite.com
+REDIS_HOST=redis
 REDIS_PORT=6379
-
-TARGET_SITE_URL=https://your-woocommerce-site.com
 ```
 
-### Running the Simulation
-Start the orchestrator:
+### 3. Infrastructure Launch
+Launch the distributed system:
 ```bash
-npm start
+docker-compose up -d --build
 ```
 
 ---
 
-## 📈 Performance Monitoring
+## 🏃 Launching the Evaluation
 
-To get the most out of AgenticTraffic, we recommend monitoring the following KPIs on your server:
-- **TTFB (Time to First Byte):** To detect server-side processing delays.
-- **Order Throughput:** Measuring the max orders/min before 5xx errors appear.
-- **Database CPU/RAM:** Identifying slow queries during peak agent activity.
-- **Error Rate:** Monitoring the ratio of successful vs. failed agent journeys.
+### Phase 1: Site Preparation (via SSH)
+Before launching agents, prepare the environment using the provided SSH scripts to avoid bottlenecking the site during setup.
 
-## 🛡 Safety & Ethics
-This tool is designed for **performance testing on environments you own or have explicit permission to test**. 
-- **Circuit Breaker:** The orchestrator includes a safety mechanism to kill agents if server error rates spike.
-- **Think Time:** Agents include randomized delays to avoid being flagged as simple DDoS attacks.
+```bash
+# Connect to your server via SSH
+ssh user@server
+
+# Run the preparation script (requires WP-CLI)
+bash /path/to/scripts/ssh/setup_site.sh
+```
+*This will mass-create users and products to ensure the agents have data to interact with.*
+
+### Phase 2: Executing the Stress Test
+You can scale the number of concurrent agents by changing the `replicas` in `docker-compose.yml` or using the Docker CLI:
+
+```bash
+# Scale to 10 workers (approx 50-100 concurrent agents depending on config)
+docker-compose up -d --scale worker=10
+```
+
+The orchestrator will automatically distribute personas:
+- **Decisive Buyer:** Direct path to checkout.
+- **Comparison Shopper:** High read load.
+- **Indecisive User:** Session/Cart stress.
+- **Account Manager:** Auth/DB stress.
+
+### Phase 3: Post-Test Cleanup
+To restore your staging site instantly:
+```bash
+# Via SSH
+bash /path/to/scripts/ssh/cleanup_site.sh
+```
+
+---
+
+## 📊 Performance Mapping
+
+We provide a `flow_map.html` file that maps every agent action to the server infrastructure. Use this to align your server logs with the agent's behavior:
+
+| Request Path | Component | Impact |
+| :--- | :--- | :--- |
+| HTTP $\rightarrow$ Firewall | Edge Server | Network I/O |
+| Firewall $\rightarrow$ Cache | LiteSpeed | RAM/Disk |
+| Cache $\rightarrow$ Worker | PHP-FPM | Worker Lock |
+| Worker $\rightarrow$ Code | WordPress | CPU/RAM |
+| Code $\rightarrow$ DB | MySQL | Disk I/O / Locks |
+| DB $\rightarrow$ Response | HTTP Stream | Network Out |
+
+---
+
+## 🛡 Safety Guards
+- **Circuit Breaker:** Automated shutdown if 5xx error rate exceeds 5%.
+- **Human-Like Delay:** Randomized "Think Time" between actions.
+- **Resource Blocking:** Blocks images/CSS to focus strictly on server-side processing.
 
 ## 📜 License
-Distributed under the MIT License. See `LICENSE` for more information.
+MIT
