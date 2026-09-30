@@ -18,7 +18,12 @@ services:
     depends_on:
       - redis
     deploy:
-      replicas: 5 # Scale this to match your needed concurrency
+      replicas: 1
+      resources:
+        limits:
+          memory: 4G
+        reservations:
+          memory: 1G
 
 volumes:
   redis_data:
